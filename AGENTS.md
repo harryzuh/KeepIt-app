@@ -5,6 +5,7 @@ Todo agente **deve** ler este arquivo antes de começar e seguir as regras gerai
 
 > Fonte da verdade do produto: `docs/` (arquitetura funcional e técnica, MVC, requisitos RF/RNF, Projeto Linear, diagramas e `schema.prisma`).
 > Em caso de conflito entre este arquivo e a documentação, **a documentação vence** e o PO é avisado.
+> Configuração do ambiente em qualquer máquina: [SETUP.md](SETUP.md).
 
 ---
 

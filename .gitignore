@@ -7,3 +7,6 @@ coverage/
 playwright-report/
 test-results/
 .DS_Store
+
+# Instruções locais do Claude Code (cada pessoa mantém o seu; a fonte comum é o AGENTS.md)
+CLAUDE.md

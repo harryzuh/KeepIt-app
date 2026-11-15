@@ -1,14 +1,12 @@
 # KeepIT
 
 Inventário doméstico compartilhado por Casa. Monorepo com `frontend/` (React + Vite), `backend/` (Express + Prisma) e `docs/`.
-A equipe de agentes e as regras de trabalho estão em [AGENTS.md](AGENTS.md).
+A equipe de agentes e as regras de trabalho estão em [AGENTS.md](AGENTS.md). Para configurar o ambiente em outra máquina, siga o [SETUP.md](SETUP.md).
 
 ## Rodando (tudo em Docker)
 
 ```bash
-make build   # instala as dependências dentro das imagens
-make up      # sobe db, s3, mailpit, backend e frontend
-make migrate # cria as tabelas a partir de backend/prisma/schema.prisma
+make setup   # configura tudo: .env, imagens, dependências, serviços e migrations
 ```
 
 | Serviço | URL |
