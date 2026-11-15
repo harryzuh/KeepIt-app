@@ -1,0 +1,9 @@
+{
+  "identities": [
+    {
+      "name": "keepit",
+      "credentials": [{ "accessKey": "keepit", "secretKey": "keepit-secret" }],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    }
+  ]
+}

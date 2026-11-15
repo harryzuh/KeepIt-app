@@ -1,0 +1,6 @@
+@import 'tailwindcss';
+
+/* Tokens do protótipo — ajustar com as cores de docs/01-modelagem-produto */
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+}

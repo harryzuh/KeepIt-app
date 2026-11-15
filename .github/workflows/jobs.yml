@@ -1,0 +1,11 @@
+name: Rotinas agendadas
+on:
+  schedule: [{ cron: "0 * * * *" }]
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Expirar assinaturas e apagar contas excluídas
+        run: curl -fsS -X POST "${{ secrets.API_URL }}/jobs/run" -H "x-jobs-token: ${{ secrets.JOBS_TOKEN }}"
