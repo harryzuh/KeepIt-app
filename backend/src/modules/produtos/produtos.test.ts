@@ -2,6 +2,7 @@ import request from 'supertest';
 import sharp from 'sharp';
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { app } from '../../app.js';
+import { env } from '../../config/env.js';
 import { prisma } from '../../lib/prisma.js';
 import { chaveFinalDoEnvio, enviarObjeto, obterMetadados } from '../../lib/s3.js';
 import { BYTES_POR_GB } from '../assinatura/plano.service.js';
@@ -18,6 +19,9 @@ import {
   limparObjetosDeTeste,
 } from '../../test/produtos.js';
 import { hojeEmSaoPaulo } from './produtos.schema.js';
+
+/** Origem do S3 que o backend usa (s3:9000 no compose, localhost:9000 no CI): é onde a URL assinada é lida. */
+const S3_INTERNO = new URL(env.S3_ENDPOINT ?? 'http://s3:9000').origin;
 
 const objetos: string[] = [];
 beforeEach(limparBanco);
@@ -494,7 +498,7 @@ describe('POST /produtos · cadastro', () => {
       const [log] = await logs('PRODUTO_CRIADO');
       expect(log!.detalhes).toMatchObject({ fotos: 2 });
       // A URL de leitura realmente serve o arquivo.
-      const baixou = await fetch(res.body.produto.fotos[1].url.replace(/^https?:\/\/[^/]+/, 'http://s3:9000'));
+      const baixou = await fetch(res.body.produto.fotos[1].url.replace(/^https?:\/\/[^/]+/, S3_INTERNO));
       expect(baixou.status).toBe(200);
     });
 
@@ -1289,7 +1293,7 @@ describe('Saneamento e imutabilidade das fotos (AppSec FD1, FD5, FD7, FD13)', ()
     const malicioso = Buffer.concat([PNG_1X1.subarray(0, 8), Buffer.from('<script>alert(1)</script>'.padEnd(PNG_1X1.length - 8, ' '))]);
     expect(malicioso.length).toBe(PNG_1X1.length);
     await put(envio.url, malicioso); // pode até aceitar: só alcança a área de envio
-    const servida = Buffer.from(await (await fetch(res.body.produto.fotos[0].url.replace(/^https?:\/\/[^/]+/, 'http://s3:9000'))).arrayBuffer());
+    const servida = Buffer.from(await (await fetch(res.body.produto.fotos[0].url.replace(/^https?:\/\/[^/]+/, S3_INTERNO))).arrayBuffer());
     expect(servida.includes(Buffer.from('<script>'))).toBe(false);
     expect(servida.subarray(0, 8).equals(PNG_1X1.subarray(0, 8))).toBe(true);
     expect((await prisma.foto.findFirstOrThrow({ where: { chave: definitiva } })).tamanhoBytes).toBe(antes);
@@ -1317,7 +1321,7 @@ describe('Saneamento e imutabilidade das fotos (AppSec FD1, FD5, FD7, FD13)', ()
     const res = await criar(casa.editor!.token, { fotos: [{ chave: envio.chave }] });
     expect(res.status).toBe(201);
     const foto0 = res.body.produto.fotos[0];
-    const baixado = Buffer.from(await (await fetch(foto0.url.replace(/^https?:\/\/[^/]+/, 'http://s3:9000'))).arrayBuffer());
+    const baixado = Buffer.from(await (await fetch(foto0.url.replace(/^https?:\/\/[^/]+/, S3_INTERNO))).arrayBuffer());
     const meta = await sharp(baixado).metadata();
     expect(meta.exif).toBeUndefined();
     expect(meta.xmp).toBeUndefined();
@@ -1333,7 +1337,7 @@ describe('Saneamento e imutabilidade das fotos (AppSec FD1, FD5, FD7, FD13)', ()
     expect((await put(envio.url, poliglota)).status).toBe(200);
     const res = await criar(casa.editor!.token, { fotos: [{ chave: envio.chave }] });
     expect(res.status).toBe(201);
-    const baixado = Buffer.from(await (await fetch(res.body.produto.fotos[0].url.replace(/^https?:\/\/[^/]+/, 'http://s3:9000'))).arrayBuffer());
+    const baixado = Buffer.from(await (await fetch(res.body.produto.fotos[0].url.replace(/^https?:\/\/[^/]+/, S3_INTERNO))).arrayBuffer());
     expect(baixado.includes(Buffer.from('<script>'))).toBe(false);
   });
 
@@ -1403,7 +1407,7 @@ describe('Saneamento e imutabilidade das fotos (AppSec FD1, FD5, FD7, FD13)', ()
     const url = new URL(res.body.produto.fotos[0].url);
     expect(Number(url.searchParams.get('X-Amz-Expires'))).toBeLessThanOrEqual(900);
     expect(new Date(res.body.produto.fotos[0].expiraEm).getTime() - Date.now()).toBeLessThanOrEqual(900_000);
-    const resp = await fetch(res.body.produto.fotos[0].url.replace(/^https?:\/\/[^/]+/, 'http://s3:9000'));
+    const resp = await fetch(res.body.produto.fotos[0].url.replace(/^https?:\/\/[^/]+/, S3_INTERNO));
     expect(resp.headers.get('content-type')).toBe('image/png');
     expect(resp.headers.get('content-disposition')).toBe('inline');
     expect(resp.headers.get('cache-control')).toMatch(/^private/);

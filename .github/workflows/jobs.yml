@@ -12,6 +12,11 @@ jobs:
           API_URL: ${{ secrets.API_URL }}
           JOBS_TOKEN: ${{ secrets.JOBS_TOKEN }}
         run: |
+          # Antes do deploy (DEPLOY.md, seção 7) os secrets não existem: pula sem falhar, em vez de mandar alerta toda hora.
+          if [ -z "$API_URL" ] || [ -z "$JOBS_TOKEN" ]; then
+            echo "::notice::Secrets API_URL e JOBS_TOKEN ainda não configurados; rotina pulada."
+            exit 0
+          fi
           resposta=$(curl -fsS -X POST "$API_URL/internal/jobs" -H "x-jobs-token: $JOBS_TOKEN")
           echo "Resultado: $resposta"
           # A rotina é fail-open por Casa: uma falha não impede as demais, mas o workflow precisa ficar vermelho
