@@ -38,7 +38,8 @@ Cada serviço precisa da URL do anterior, por isso a ordem importa.
    - Copie a URL. Ela tem a forma `postgresql://usuario:senha@ep-xxxx.região.aws.neon.tech/neondb?sslmode=require`.
 3. Guarde como **`DATABASE_URL`**.
 
-As tabelas são criadas pelo próprio Render no primeiro deploy (`prisma migrate deploy`). Não rode o seed em produção:
+As tabelas e o catálogo de planos (migration `catalogo_de_planos`) são criados pelo próprio Render no deploy
+(`prisma migrate deploy`). Não rode o seed em produção:
 ele cria o usuário demo de senha conhecida e se recusa a fazer isso com `NODE_ENV=production`.
 
 Backup: o Free do Neon guarda um histórico curto de restauração (*point-in-time restore*). Para backup diário fora do
@@ -83,8 +84,9 @@ Neon (RNF23), veja a seção 9.
 
 ## 4. Resend (e-mail)
 
-Os e-mails do KeepIT são os códigos de verificação, recuperação de senha e troca de e-mail. Sem eles o cadastro de
-novos usuários não fecha.
+O KeepIT envia e-mail na recuperação de senha e na troca de e-mail (código de 6 dígitos e aviso ao endereço antigo).
+O cadastro não envia e-mail. Se o envio falhar, a API responde erro e o usuário não consegue recuperar a senha nem
+trocar o e-mail.
 
 1. Crie a conta em resend.com.
 2. **Domínio (obrigatório para enviar a qualquer pessoa):** *Domains → Add domain* (ex.: `keepit.com.br` ou
@@ -170,8 +172,8 @@ No Render Free a chamada de hora em hora também acorda a API; o workflow espera
 
 Faça no domínio da Vercel, numa janela anônima:
 
-- [ ] Cadastro com um e-mail seu → o código chega (Resend) → a Casa Individual é criada.
-- [ ] Login, logout e recuperação de senha.
+- [ ] Cadastro com um e-mail seu → a Casa Individual é criada (o cadastro não envia e-mail).
+- [ ] Login, logout e **recuperação de senha** → o código chega (é o teste do Resend).
 - [ ] Cadastrar produto com tag e **foto** → a foto aparece no detalhe (R2 + CORS + CSP).
 - [ ] Produto duplicado mostra as 3 opções.
 - [ ] Tela de **Planos** mostra o aviso e os botões **Assinar** cinza.
