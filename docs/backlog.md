@@ -11,3 +11,5 @@ Itens decididos para depois do MVP. Cada um deve virar uma especificação próp
 | Disponibilidade de 99,99% | RNF28 | Exige plano pago e redundância; a meta do MVP é 99% |
 | Aplicativo nativo para celular | Decisão de 04/11/2026 | O MVP é web responsivo para acelerar a entrega |
 | Funcionalidades do documento Desafio (depreciação, revenda, notas fiscais, localização, garantia) | Fase anterior | Fora do escopo definido pelo grupo |
+| Foto de perfil do usuário (UC015) | Proposta do PO, sprint 1 | O schema não tem campo para a foto e o armazenamento de arquivos é do M3; entra depois de M3 como história própria |
+| Contato com a equipe KeepIT (RF29, UC032) | Proposta do PO, sprint 1 | Não faz parte de UC001–UC015; entra em sprint posterior do M1 |

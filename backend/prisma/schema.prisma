@@ -29,6 +29,29 @@ enum StatusAssinatura {
   EXPIRADA
 }
 
+/// ADR 0002 (D3): por que uma assinatura virou EXPIRADA.
+enum MotivoEncerramento {
+  CANCELAMENTO
+  RECUSA
+  TROCA
+  TITULAR_EXCLUIDO
+}
+
+/// ADR 0002 (D4): marca do cartão simulado (nunca guardamos o número completo).
+enum MarcaCartao {
+  VISA
+  MASTERCARD
+  AMEX
+  ELO
+  OUTRA
+}
+
+/// ADR 0003 (D2): tipo REAL da imagem, conferido pelos primeiros bytes (não pela extensão).
+enum TipoImagem {
+  JPEG
+  PNG
+}
+
 enum FinalidadeCodigo {
   RECUPERAR_SENHA
   ALTERAR_EMAIL
@@ -41,9 +64,12 @@ model Usuario {
   senhaHash            String    @map("senha_hash")
   criadoEm             DateTime  @default(now()) @map("criado_em") @db.Timestamptz
   exclusaoSolicitadaEm DateTime? @map("exclusao_solicitada_em") @db.Timestamptz
+  /// ADR 0001 (A1): tokens JWT emitidos antes deste instante deixam de valer (logout, troca/redefinição de senha, exclusão).
+  sessoesValidasDesde  DateTime  @default(now()) @map("sessoes_validas_desde") @db.Timestamptz
 
   membro              Membro?
   assinaturas         Assinatura[]        @relation("Titular")
+  metodoPagamento     MetodoPagamento?
   produtosAdicionados Produto[]           @relation("AdicionadoPor")
   codigos             CodigoVerificacao[]
   logs                LogAuditoria[]
@@ -95,22 +121,40 @@ model Plano {
 /// Regra extra criada por migration SQL: no máximo uma assinatura ATIVA ou CANCELADA vigente por Casa
 /// (índice único parcial em casa_id WHERE status IN ('ATIVA','CANCELADA')).
 model Assinatura {
-  id               Int              @id @default(autoincrement())
-  casaId           Int              @map("casa_id")
-  planoId          Int              @map("plano_id")
-  titularId        Int              @map("titular_id")
-  status           StatusAssinatura @default(PENDENTE)
-  dataInicio       DateTime         @default(now()) @map("data_inicio") @db.Timestamptz
-  dataRenovacao    DateTime         @map("data_renovacao") @db.Timestamptz
-  dataCancelamento DateTime?        @map("data_cancelamento") @db.Timestamptz
-  refPagamento     String?          @map("ref_pagamento")
+  id                 Int                 @id @default(autoincrement())
+  casaId             Int                 @map("casa_id")
+  planoId            Int                 @map("plano_id")
+  /// ADR 0002 (D3): opcional; vira nulo quando o titular é apagado (a assinatura já está EXPIRADA).
+  titularId          Int?                @map("titular_id")
+  status             StatusAssinatura    @default(PENDENTE)
+  dataInicio         DateTime            @default(now()) @map("data_inicio") @db.Timestamptz
+  dataRenovacao      DateTime            @map("data_renovacao") @db.Timestamptz
+  dataCancelamento   DateTime?           @map("data_cancelamento") @db.Timestamptz
+  refPagamento       String?             @map("ref_pagamento")
+  /// ADR 0002 (D3): preenchidos quando a assinatura vira EXPIRADA.
+  motivoEncerramento MotivoEncerramento? @map("motivo_encerramento")
+  encerradaEm        DateTime?           @map("encerrada_em") @db.Timestamptz
 
-  casa    Casa    @relation(fields: [casaId], references: [id], onDelete: Cascade)
-  plano   Plano   @relation(fields: [planoId], references: [id])
-  titular Usuario @relation("Titular", fields: [titularId], references: [id])
+  casa    Casa     @relation(fields: [casaId], references: [id], onDelete: Cascade)
+  plano   Plano    @relation(fields: [planoId], references: [id])
+  titular Usuario? @relation("Titular", fields: [titularId], references: [id], onDelete: SetNull)
 
   @@index([casaId, status])
+  @@index([status, dataRenovacao])
   @@map("assinatura")
+}
+
+/// ADR 0002 (D4): método de pagamento SIMULADO do usuário (um por usuário). Só marca e 4 últimos dígitos (RNF04).
+model MetodoPagamento {
+  id           Int         @id @default(autoincrement())
+  usuarioId    Int         @unique @map("usuario_id")
+  marca        MarcaCartao
+  ultimos4     String      @db.Char(4)
+  atualizadoEm DateTime    @default(now()) @map("atualizado_em") @db.Timestamptz
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("metodo_pagamento")
 }
 
 model Produto {
@@ -123,6 +167,8 @@ model Produto {
   quantidade      Int      @default(1)
   dataCompra      DateTime @map("data_compra") @db.Date
   dataCadastro    DateTime @default(now()) @map("data_cadastro") @db.Timestamptz
+  /// ADR 0003 (D1): última alteração (tela 07). A migration cria a coluna com default now(); o Prisma a atualiza em todo update.
+  atualizadoEm    DateTime @default(now()) @updatedAt @map("atualizado_em") @db.Timestamptz
 
   casa          Casa         @relation(fields: [casaId], references: [id], onDelete: Cascade)
   adicionadoPor Usuario?     @relation("AdicionadoPor", fields: [adicionadoPorId], references: [id], onDelete: SetNull)
@@ -134,13 +180,17 @@ model Produto {
   @@map("produto")
 }
 
-/// Até 3 fotos por produto (validado na API).
+/// Até 3 fotos por produto (validado na API). ADR 0003 (D2, D5): guarda a CHAVE do objeto no S3, nunca uma URL;
+/// a URL de leitura é assinada a cada resposta. Só foto gravada aqui conta na cota de armazenamento (RF39).
 model Foto {
-  id           Int    @id @default(autoincrement())
-  produtoId    Int    @map("produto_id")
-  url          String
-  tamanhoBytes Int    @map("tamanho_bytes")
-  ordem        Int    @db.SmallInt
+  id           Int        @id @default(autoincrement())
+  produtoId    Int        @map("produto_id")
+  /// Chave do objeto no bucket: casas/<casaId>/fotos/<uuid>.<jpg|png> (gerada pelo servidor).
+  chave        String     @unique
+  tipo         TipoImagem
+  tamanhoBytes Int        @map("tamanho_bytes")
+  ordem        Int        @db.SmallInt
+  criadaEm     DateTime   @default(now()) @map("criada_em") @db.Timestamptz
 
   produto Produto @relation(fields: [produtoId], references: [id], onDelete: Cascade)
 
@@ -156,6 +206,7 @@ model Tag {
   casa     Casa         @relation(fields: [casaId], references: [id], onDelete: Cascade)
   produtos ProdutoTag[]
 
+  /// Unicidade por Casa SEM diferenciar caixa: índice único funcional (casa_id, lower(nome)) criado por migration SQL (ADR 0003 D1).
   @@unique([casaId, nome])
   @@map("tag")
 }
@@ -176,6 +227,10 @@ model CodigoVerificacao {
   usuarioId  Int              @map("usuario_id")
   codigoHash String           @map("codigo_hash")
   finalidade FinalidadeCodigo
+  /// ADR 0001 (A2): e-mail pendente de confirmação (somente finalidade ALTERAR_EMAIL).
+  novoEmail  String?          @map("novo_email") @db.VarChar(120)
+  /// Erros de digitação do código; ao chegar no limite o código é invalidado (AppSec F2).
+  tentativas Int              @default(0)
   expiraEm   DateTime         @map("expira_em") @db.Timestamptz
   usadoEm    DateTime?        @map("usado_em") @db.Timestamptz
 
@@ -200,5 +255,7 @@ model LogAuditoria {
   casa    Casa?    @relation(fields: [casaId], references: [id], onDelete: SetNull)
 
   @@index([casaId, criadoEm])
+  /// ADR 0003 (D1): histórico de um produto (tela 07).
+  @@index([entidade, entidadeId, criadoEm])
   @@map("log_auditoria")
 }

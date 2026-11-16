@@ -7,4 +7,16 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   { plugins: { 'react-hooks': reactHooks }, rules: reactHooks.configs.recommended.rules },
+  {
+    // Sem HTML injetado nem eval: toda saída de texto do usuário passa pelo escape do React.
+    rules: {
+      'no-eval': 'error',
+      'no-implied-eval': 'error',
+      'no-restricted-syntax': [
+        'error',
+        { selector: "JSXAttribute[name.name='dangerouslySetInnerHTML']", message: 'Proibido: use texto escapado pelo React.' },
+        { selector: "AssignmentExpression[left.property.name=/^(innerHTML|outerHTML)$/]", message: 'Proibido atribuir innerHTML/outerHTML.' },
+      ],
+    },
+  },
 );

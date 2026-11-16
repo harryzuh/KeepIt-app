@@ -1,6 +1,38 @@
 @import 'tailwindcss';
+@import '@fontsource-variable/inter';
 
-/* Tokens do protótipo — ajustar com as cores de docs/01-modelagem-produto */
+/* Tokens do protótipo (docs/01-modelagem-produto/1.3-prototipacao.md, Tabela 3) */
 @theme {
-  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-sans: 'Inter Variable', system-ui, sans-serif;
+  --color-primary: #0f5c4d;
+  --color-primary-escuro: #0b4a3e;
+  --color-primary-claro: #e3efec;
+  --color-apoio: #e9a23b;
+  --color-fundo: #f6f5f1;
+  --color-texto: #1c1f1e;
+  --color-suave: #6b716f;
+  --color-erro: #c2412d;
+  --color-erro-claro: #fbeae7;
+  --color-borda: #e2e0d8;
+  --color-editor: #2f5f9e;
+  --color-editor-claro: #e4ecf7;
+  --radius-card: 16px;
+  --radius-campo: 12px;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  background-color: var(--color-fundo);
+  color: var(--color-texto);
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }

@@ -7,5 +7,22 @@ jobs:
   run:
     runs-on: ubuntu-latest
     steps:
-      - name: Expirar assinaturas e apagar contas excluídas
-        run: curl -fsS -X POST "${{ secrets.API_URL }}/jobs/run" -H "x-jobs-token: ${{ secrets.JOBS_TOKEN }}"
+      - name: Expirar/renovar assinaturas, apagar contas excluídas e limpar fotos órfãs do S3
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          JOBS_TOKEN: ${{ secrets.JOBS_TOKEN }}
+        run: |
+          resposta=$(curl -fsS -X POST "$API_URL/internal/jobs" -H "x-jobs-token: $JOBS_TOKEN")
+          echo "Resultado: $resposta"
+          # A rotina é fail-open por Casa: uma falha não impede as demais, mas o workflow precisa ficar vermelho
+          # para alguém investigar (GitHub avisa por e-mail quem configurou o workflow).
+          falhas=$(echo "$resposta" | jq -r '.falhas // 0')
+          if [ "$falhas" != "0" ]; then
+            echo "::error::A rotina terminou com $falhas falha(s). Veja os logs da API (procure por 'rotina')."
+            exit 1
+          fi
+          # Fotos órfãs vencidas que o S3 não deixou apagar (limparFotosOrfas): não derruba a rotina, mas avisa.
+          pendentes=$(echo "$resposta" | jq -r '.fotosOrfasPendentes // 0')
+          if [ "$pendentes" != "0" ]; then
+            echo "::warning::$pendentes foto(s) órfã(s) vencida(s) continuam no S3. Se repetir nas próximas horas, investigue o bucket."
+          fi
