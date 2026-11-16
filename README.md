@@ -1,7 +1,7 @@
 # KeepIT
 
 Inventário doméstico compartilhado por Casa. Monorepo com `frontend/` (React + Vite), `backend/` (Express + Prisma) e `docs/`.
-A equipe de agentes e as regras de trabalho estão em [AGENTS.md](AGENTS.md). Para configurar o ambiente em outra máquina, siga o [SETUP.md](SETUP.md).
+A equipe de agentes e as regras de trabalho estão em [AGENTS.md](AGENTS.md). Para configurar o ambiente em outra máquina, siga o [SETUP.md](SETUP.md); para publicar em produção, o [DEPLOY.md](DEPLOY.md).
 
 ## Rodando (tudo em Docker)
 

@@ -29,12 +29,12 @@ const assinaturaCriada = {
   podeReativar: false,
 };
 
-function abrir(opcoes: { papel?: string; metodo?: unknown; estado?: unknown; assinar?: RespostaFalsa; casaId?: number } = {}) {
-  const { papel = 'ADMIN', metodo: m = metodo, estado, assinar, casaId = 1 } = opcoes;
+function abrir(opcoes: { papel?: string; metodo?: unknown; estado?: unknown; assinar?: RespostaFalsa; casaId?: number; contratacaoDisponivel?: boolean } = {}) {
+  const { papel = 'ADMIN', metodo: m = metodo, estado, assinar, casaId = 1, contratacaoDisponivel = true } = opcoes;
   localStorage.setItem('keepit.token', 't');
   queryClient.setQueryData(CHAVE_PERFIL, { ...perfilExemplo, papel });
   const fetchFalso = mockarRotas({
-    'GET /planos': { corpo: { planos: planosExemplo, planoAtual: 'INDIVIDUAL', assinatura: null } },
+    'GET /planos': { corpo: { planos: planosExemplo, planoAtual: 'INDIVIDUAL', assinatura: null, contratacaoDisponivel } },
     'GET /pagamento/metodo': { corpo: { metodo: m } },
     'GET /assinaturas/atual': { corpo: atual },
     'POST /assinaturas': assinar ?? {
@@ -53,6 +53,12 @@ const corpoDoPost = (f: ReturnType<typeof mockarRotas>) => {
 };
 
 describe('Pagamento (tela 14)', () => {
+  it('planos desativados: volta para a tela de planos sem oferecer pagamento', async () => {
+    const { router } = abrir({ contratacaoDisponivel: false });
+    expect(await screen.findByText('tela de planos')).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/conta/planos');
+  });
+
   it('ADMIN paga com o cartão salvo, vai à tela 15 e o corpo não leva confirmaSaidaDaCasa', async () => {
     const { router, fetchFalso } = abrir();
     expect(await screen.findByText('Visa final 4821')).toBeInTheDocument();

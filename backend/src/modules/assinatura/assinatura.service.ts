@@ -11,7 +11,7 @@ import {
 } from './assinatura.email.js';
 import type { AssinarDto, CancelarDto } from './assinatura.schema.js';
 import { moverParaCasaNova } from './casa-nova.js';
-import { cobrarSimulado } from './gateway-simulado.js';
+import { cobrarSimulado, contratacaoDisponivel } from './gateway-simulado.js';
 import { obterMetodo } from './pagamento.service.js';
 import {
   type PlanoInfo,
@@ -68,7 +68,7 @@ const estadoInvalido = (mensagem = 'Esta ação não está disponível agora') =
   new HttpError(409, CODIGOS_ERRO.ESTADO_INVALIDO, mensagem);
 
 /** UC019 / RF12 / RF14: os três planos e o plano efetivo da Casa do usuário. */
-export async function listarPlanos(casaId: number) {
+export async function listarPlanos(casaId: number, disponivel: boolean = contratacaoDisponivel()) {
   const [planos, vigente] = await Promise.all([
     prisma.plano.findMany({ orderBy: { preco: 'asc' } }),
     obterPlanoVigente(casaId),
@@ -79,6 +79,7 @@ export async function listarPlanos(casaId: number) {
     assinatura: vigente.assinatura
       ? { status: vigente.assinatura.status, dataRenovacao: vigente.assinatura.dataRenovacao.toISOString() }
       : null,
+    contratacaoDisponivel: disponivel,
   };
 }
 

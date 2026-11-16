@@ -1,0 +1,50 @@
+# Blueprint do Render (API do KeepIT). Passo a passo em DEPLOY.md, seção 5.
+# Valores com `sync: false` são pedidos no painel na primeira vez (nunca entram no repositório).
+services:
+  - type: web
+    name: keepit-api
+    runtime: docker
+    plan: free # dorme após 15 min sem acesso; o plano Starter (~US$ 7/mês) elimina a espera
+    rootDir: backend
+    dockerfilePath: ./Dockerfile # o último estágio (prod) roda "prisma migrate deploy" e depois a API
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PAGAMENTO_SIMULADO
+        value: "false" # planos pagos desativados no MVP (decisão 64 do STATUS.md)
+      - key: RATE_LIMIT_DESLIGADO
+        value: "false"
+      - key: JWT_EXPIRES_IN
+        value: 8h
+      # Segredos gerados pelo Render (256 bits). Copie o JOBS_TOKEN para os secrets do GitHub (DEPLOY.md, seção 7).
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CODIGO_SECRET
+        generateValue: true
+      - key: JOBS_TOKEN
+        generateValue: true
+      # Neon (seção 2)
+      - key: DATABASE_URL
+        sync: false
+      # Domínio do front na Vercel (seção 6), ex.: https://keepit.vercel.app
+      - key: CORS_ORIGIN
+        sync: false
+      # Cloudflare R2 (seção 3)
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_REGION
+        value: auto
+      - key: S3_BUCKET
+        value: keepit-fotos
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      # Resend (seção 4)
+      - key: RESEND_API_KEY
+        sync: false
+      - key: MAIL_FROM
+        sync: false

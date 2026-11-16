@@ -9,7 +9,8 @@ import { autorizacao, criarAssinaturaDeTeste, montarCasa, testarMatrizDePapeis }
 import { limparBanco } from '../../test/db.js';
 import { passaNoLuhn } from './assinatura.schema.js';
 import { envSchema } from '../../config/env.js';
-import { cobrarSimulado, detectarMarca, exigirGatewaySimulado } from './gateway-simulado.js';
+import { cobrarSimulado, contratacaoDisponivel, detectarMarca, exigirGatewaySimulado } from './gateway-simulado.js';
+import { listarPlanos } from './assinatura.service.js';
 import { BYTES_POR_GB } from './plano.service.js';
 
 const DIA = 86_400_000;
@@ -74,7 +75,17 @@ describe('GET /planos', () => {
     expect(res.body.planos[1]).toMatchObject({ preco: '19.90', limiteMembros: 6, limiteArmazenamentoGb: 20 });
     expect(res.body.planoAtual).toBe('INDIVIDUAL');
     expect(res.body.assinatura).toBeNull();
+    expect(res.body.contratacaoDisponivel).toBe(true);
     expect(res.headers['cache-control']).toBe('no-store');
+  });
+
+  it('sem o gateway simulado (produção), contratacaoDisponivel é false: planos desativados', async () => {
+    const casa = await montarCasa();
+    expect(contratacaoDisponivel(false)).toBe(false);
+    expect(contratacaoDisponivel(true)).toBe(true);
+    const resposta = await listarPlanos(casa.casaId, false);
+    expect(resposta.contratacaoDisponivel).toBe(false);
+    expect(resposta.planos).toHaveLength(3);
   });
 
   it('mostra o plano vigente e a assinatura CANCELADA com a data de fim dos benefícios', async () => {

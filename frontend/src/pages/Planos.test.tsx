@@ -11,14 +11,31 @@ const rotas = [
   { path: '/conta/assinatura', element: <p>tela da assinatura</p> },
 ];
 
-function abrir(papel: string, assinatura: unknown = null, planoAtual = 'INDIVIDUAL') {
+function abrir(papel: string, assinatura: unknown = null, planoAtual = 'INDIVIDUAL', contratacaoDisponivel = true) {
   localStorage.setItem('keepit.token', 't');
   queryClient.setQueryData(CHAVE_PERFIL, { ...perfilExemplo, papel });
-  mockarRotas({ 'GET /planos': { corpo: { planos: planosExemplo, planoAtual, assinatura } } });
+  mockarRotas({ 'GET /planos': { corpo: { planos: planosExemplo, planoAtual, assinatura, contratacaoDisponivel } } });
   return renderizarRotas(rotas, '/conta/planos');
 }
 
 describe('Planos (tela 13)', () => {
+  it('planos desativados: mostra os planos e o aviso, com os botões Assinar desabilitados', async () => {
+    const { router } = abrir('ADMIN', null, 'INDIVIDUAL', false);
+    expect(await screen.findByRole('heading', { name: 'Família' })).toBeInTheDocument();
+    expect(screen.getByText(/planos pagos estão desativados/)).toBeInTheDocument();
+    const botoes = screen.getAllByRole('button', { name: /^Assinar .*\(desativado\)$/ });
+    expect(botoes).toHaveLength(2);
+    for (const b of botoes) expect(b).toBeDisabled();
+    await userEvent.click(botoes[0]);
+    expect(router.state.location.pathname).toBe('/conta/planos');
+  });
+
+  it('com a contratação disponível, não mostra o aviso de planos desativados', async () => {
+    abrir('ADMIN');
+    await screen.findByRole('heading', { name: 'Família' });
+    expect(screen.queryByText(/planos pagos estão desativados/)).toBeNull();
+  });
+
   it('lista os três planos; o Individual não tem botão Assinar e mostra "Plano atual"', async () => {
     abrir('ADMIN');
     expect(await screen.findByRole('heading', { name: 'Família' })).toBeInTheDocument();

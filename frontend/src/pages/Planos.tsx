@@ -25,6 +25,7 @@ export default function Planos() {
   const [escolhido, setEscolhido] = useState<PlanoDetalhe | null>(null);
   if (!u) return null;
   const ehAdmin = u.papel === 'ADMIN';
+  const desativados = data?.contratacaoDisponivel === false;
 
   const irParaPagamento = (p: PlanoDetalhe, confirmaSaida: boolean) =>
     navigate(`/conta/planos/${planoParaUrl(p.nome)}/pagamento`, { state: confirmaSaida ? { confirmaSaida: true } : undefined });
@@ -44,6 +45,9 @@ export default function Planos() {
         </div>
       ) : (
         <div className="flex flex-col gap-4">
+          {desativados && (
+            <Alert tipo="info">Os planos pagos estão desativados no momento. Todas as Casas usam o plano Individual.</Alert>
+          )}
           {data.assinatura?.status === 'CANCELADA' && (
             <Alert tipo="info">Assinatura cancelada: benefícios até {formatData(data.assinatura.dataRenovacao)}.</Alert>
           )}
@@ -62,6 +66,12 @@ export default function Planos() {
                     Plano atual
                   </Button>
                 );
+            } else if (pago && desativados) {
+              acao = (
+                <Button variante="cinza" disabled aria-label={`Assinar ${nomeDoPlano(p.nome)} (desativado)`}>
+                  Assinar
+                </Button>
+              );
             } else if (pago) {
               acao = (
                 <Button onClick={() => assinar(p)} aria-label={`Assinar ${nomeDoPlano(p.nome)}`}>

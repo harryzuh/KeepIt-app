@@ -39,6 +39,8 @@ export interface RespostaPlanos {
   planos: PlanoDetalhe[];
   planoAtual: NomePlano;
   assinatura: { status: StatusAssinatura; dataRenovacao: string } | null;
+  /** false = planos pagos desativados (produção sem gateway): a tela mostra os planos, mas não deixa contratar. */
+  contratacaoDisponivel?: boolean;
 }
 
 export interface RespostaAssinaturaAtual {

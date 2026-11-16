@@ -21,6 +21,14 @@ export function exigirGatewaySimulado(simulado: boolean = env.PAGAMENTO_SIMULADO
   }
 }
 
+/**
+ * Contratação de planos disponível? Só com o gateway simulado ligado (dev e testes). Em produção ele é proibido,
+ * então os planos pagos ficam desativados (decisão do PO, Sprint 4): a tela 13 aparece, mas sem contratar.
+ */
+export function contratacaoDisponivel(simulado: boolean = env.PAGAMENTO_SIMULADO): boolean {
+  return simulado;
+}
+
 export interface ResultadoCobranca {
   aprovado: boolean;
   /** Referência da cobrança simulada (`sim_<uuid>`), gravada em `Assinatura.refPagamento` quando aprovada. */

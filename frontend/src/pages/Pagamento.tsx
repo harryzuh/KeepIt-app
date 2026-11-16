@@ -74,6 +74,9 @@ export default function Pagamento() {
   // Sem plano válido, ou membro que não confirmou o aviso: volta para a escolha.
   if (!nomePlano || (!ehAdmin && !confirmaSaida)) return <Navigate to="/conta/planos" replace />;
 
+  // Planos desativados (produção sem gateway): não há o que pagar; volta para a tela 13, que explica.
+  if (planos.data?.contratacaoDisponivel === false) return <Navigate to="/conta/planos" replace />;
+
   const plano = planos.data?.planos.find((p) => p.nome === nomePlano);
   const carregando = planos.isPending || metodo.isPending;
   const cartao = metodo.data?.metodo ?? null;

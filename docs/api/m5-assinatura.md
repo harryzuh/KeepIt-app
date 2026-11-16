@@ -79,10 +79,12 @@ Resposta `200`:
     { "id": 3, "nome": "BUSINESS",   "preco": "49.90", "limiteMembros": 15, "limiteArmazenamentoGb": 100 }
   ],
   "planoAtual": "INDIVIDUAL",
-  "assinatura": null
+  "assinatura": null,
+  "contratacaoDisponivel": true
 }
 ```
 
+- `contratacaoDisponivel`: `true` só com o gateway simulado ligado (`PAGAMENTO_SIMULADO=true`, dev e testes). Em produção é `false`: os planos pagos ficam **desativados** (decisão do PO, Sprint 4). O front mostra os três planos, um aviso breve e os botões Assinar desabilitados (cinza), e a tela 14 redireciona para a 13. A API continua sendo a autoridade: `PUT /pagamento/metodo` e `POST /assinaturas` respondem `503 PAGAMENTO_INDISPONIVEL`.
 - `planos`: sempre os três, nesta ordem. Os textos de benefícios são do front.
 - `planoAtual`: plano **efetivo** da Casa do usuário (selo "Plano atual"). `assinatura`: `{ status, dataRenovacao }` ou `null` (no Individual); com `CANCELADA` o front mostra o aviso "benefícios até dd/mm".
 - O cartão Individual não tem botão Assinar. Erros: só os globais.
